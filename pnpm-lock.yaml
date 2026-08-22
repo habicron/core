@@ -6,17 +6,17 @@ importers:
   .:
     configDependencies:
       '@thecodeorigin/pnpm-plugin-shared':
-        specifier: 1.1.1
-        version: 1.1.1
+        specifier: 1.2.0
+        version: 1.2.0
 
 packages:
 
-  '@thecodeorigin/pnpm-plugin-shared@1.1.1':
-    resolution: {integrity: sha512-NQreSpaRRRvDfaBd/LLTm0XE1wWIjL24e0jDU69OelWKGUPaF5UFB4vHGDwEYOB+A3dReEPWX3jcC4cn3YYqsQ==}
+  '@thecodeorigin/pnpm-plugin-shared@1.2.0':
+    resolution: {integrity: sha512-QJ5IK43nXcXoAujNKj1ma3iagu3Jr2ob+YrrlfTCFI18u3BX6vH0yDS6bKsMF1Q9dASL9DUXqycJR4ejdtTMuQ==}
 
 snapshots:
 
-  '@thecodeorigin/pnpm-plugin-shared@1.1.1': {}
+  '@thecodeorigin/pnpm-plugin-shared@1.2.0': {}
 
 ---
 lockfileVersion: '9.0'
@@ -25,7 +25,7 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-pnpmfileChecksum: sha256-RBdzUPNQV6Eax9ZnUg+vffWvA4KK7masmrdp+SpoMUM=
+pnpmfileChecksum: sha256-B3PdG9e/xsPqi2gay/jELt4oL+LVZOKeuFU0XYyfURs=
 
 importers:
 
