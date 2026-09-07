@@ -288,8 +288,8 @@ The engine is timer-driven, so tests must control time and randomness.
   package. It deploys to **https://habit.thecodeorigin.com** on Cloudflare
   Workers (static assets) via `.github/workflows/deploy.yml` — triggered on
   pushes to `main` that touch `public/**`, `wrangler.toml`, or the workflow.
-  The deploy needs repo secrets `CLOUDFLARE_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
-  (the workflow also has `GITHUB_TOKEN` available). Config lives in
+  The deploy needs only repository secret `THECODEORIGIN_VAULT_TOKEN`; Cloudflare
+  credentials come from Vault `habicron-library/production`. Config lives in
   `wrangler.toml` (an assets-only Worker, no server script).
 
 ---

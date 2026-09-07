@@ -28,14 +28,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Load Cloudflare credentials from Vault
+        uses: thecodeorigin/actions/vault-environment@4bff26b9e9ac41c293f82a294a5eb2a262648a87
+        with:
+          token: ${{ secrets.THECODEORIGIN_VAULT_TOKEN }}
+          project: habicron-library
+          environment: production
+          deployment-kind: production
+          keys: '["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]'
+
       - name: Publish
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
-          # The runner has no pnpm; install Wrangler with npm (the repo's
-          # packageManager field would otherwise make the action reach for pnpm).
           packageManager: npm
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
