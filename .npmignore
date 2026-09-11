@@ -30,12 +30,10 @@ package-lock.json
 yarn.lock
 bun.lockb
 
-# Repo-only: docs, marketing site, agent skills, CI, infra
+# Repo-only: docs, agent skills, CI
 CLAUDE.md
-public/
 skills/
 .github/
-wrangler.toml
 
 # Caches, coverage, editor & OS cruft
 coverage/

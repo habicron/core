@@ -40,21 +40,19 @@ src/
   react/   index.ts + __test__/   # React adapter — useHabit (state)
   cli/     index.ts store.ts daemon.ts + __test__/   # `habit` background task manager
 skills/habicron-{node,browser,vue,react,cli}/SKILL.md   # one agent skill per platform
-public/index.html                # self-contained landing page (no framework)
 build.config.ts                  # unbuild — emits minified ESM + CJS + .d.ts
 vitest.config.ts                 # node env by default; jsdom via file docblock
 eslint.config.mjs                # @antfu/eslint-config, strict, type-aware
 tsconfig.json                    # strict typecheck (noEmit)
 package.json                     # ESM, multi-entry exports map, bin
-wrangler.toml                    # Cloudflare Workers static-assets config
-.github/workflows/deploy.yml     # deploys public/ to habit.thecodeorigin.com
 ```
 
 **There is a build step.** The package is authored in TypeScript and built
 with [unbuild](https://github.com/unjs/unbuild) to `dist/` — both `.mjs` and
 `.cjs`, minified, with generated `.d.ts`. `package.json#files` ships only
-`dist`, `README.md`, `LICENSE`. `public/` is **not** published — it is the
-marketing page, deployed separately.
+`dist`, `README.md`, `LICENSE`. The landing page belongs to the hosted application
+in `apps/habicron` in the ecosystem superproject; this repository contains only
+the library, CLI, and their development tooling and documentation.
 
 > habicron is a built, multi-platform package, not a buildless single file.
 > Do not introduce a root `index.js` or remove the build.
@@ -283,27 +281,18 @@ The engine is timer-driven, so tests must control time and randomness.
 - Bump `version` (semver). Public API change → minor pre-1.0, breaking →
   document in the README and bump accordingly.
 - Before publishing: `pnpm typecheck && pnpm test && pnpm build`, confirm `files`
-  ships only `dist`/`README.md`/`LICENSE`, and that `public/` is **not** packed.
-- `public/index.html` is the marketing page; it is **not** part of the npm
-  package. It deploys to **https://habit.thecodeorigin.com** on Cloudflare
-  Workers (static assets) via `.github/workflows/deploy.yml` — triggered on
-  pushes to `main` that touch `public/**`, `wrangler.toml`, or the workflow.
-  The deploy needs only repository secret `THECODEORIGIN_VAULT_TOKEN`; Cloudflare
-  credentials come from Vault `habicron-library/production`. Config lives in
-  `wrangler.toml` (an assets-only Worker, no server script).
+  ships only `dist`/`README.md`/`LICENSE`.
+- Landing-page development and deployment belong to the hosted application
+  repository (`apps/habicron` in the ecosystem superproject).
 
 ---
 
 ## 11. Backlog (not yet implemented)
 
-- **`nextRuns(n)`:** return the next `n` fire times without executing — powers a
-  live timeline in `public/`.
-- **Seeded docs demo:** wire `options.random` into `public/index.html` for a
-  reproducible live ticker.
+- **`nextRuns(n)`:** return the next `n` fire times without executing — enables
+  consumers to build live timelines.
 - **CLI config file:** allow `habit --config habits.json` for multi-habit
   runs.
-- **Shiki highlighting** in `public/index.html` if code samples start changing
-  often (replaces the hand-spanned `<span>`s).
 
 ---
 

@@ -38,7 +38,6 @@ export default antfu(
     ignores: [
       'dist',
       'coverage',
-      'public/**',
       // README code samples are illustrative fragments, not standalone modules.
       '**/*.md',
     ],
