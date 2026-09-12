@@ -2,7 +2,6 @@
   "name": "habicron",
   "type": "module",
   "version": "0.2.0",
-  "packageManager": "pnpm@11.22.0",
   "description": "Schedule callbacks on randomized recurring intervals — habits, not cronjobs. Accurate by default, jittered on demand, with no drift. Works in Node, Vue, React, and the CLI.",
   "author": "thecodeorigin <nguyenhuunguyeny.ny@gmail.com>",
   "license": "MIT",
@@ -84,18 +83,19 @@
     "access": "public"
   },
   "scripts": {
-    "build": "unbuild",
+    "build": "node scripts/ecosystem-bootstrap.mjs build",
     "prepack": "unbuild",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "build:workspace": "unbuild"
   },
   "peerDependencies": {
-    "react": ">=17",
-    "vue": ">=3"
+    "react": "catalog:packages-habicron",
+    "vue": "catalog:packages-habicron-2"
   },
   "peerDependenciesMeta": {
     "react": {
@@ -106,23 +106,23 @@
     }
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^9.0.0",
-    "@eslint-react/eslint-plugin": "^5.9.0",
-    "@testing-library/react": "^16.1.0",
-    "@types/node": "^22.10.2",
-    "@types/react": "^19.0.2",
-    "@vitest/coverage-v8": "^2.1.8",
-    "eslint": "^10.5.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.3",
-    "eslint-plugin-vue": "^10.9.2",
-    "jsdom": "^25.0.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "typescript": "^5.7.2",
-    "unbuild": "^2.0.0",
-    "vitest": "^2.1.8",
-    "vue": "^3.5.13",
-    "vue-eslint-parser": "^10.4.1"
+    "@antfu/eslint-config": "catalog:packages-habicron",
+    "@eslint-react/eslint-plugin": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/node": "catalog:packages-habicron",
+    "@types/react": "catalog:",
+    "@vitest/coverage-v8": "catalog:packages-habicron",
+    "eslint": "catalog:packages-habicron",
+    "eslint-plugin-react-hooks": "catalog:",
+    "eslint-plugin-react-refresh": "catalog:",
+    "eslint-plugin-vue": "catalog:",
+    "jsdom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:packages-habicron",
+    "unbuild": "catalog:",
+    "vitest": "catalog:packages-habicron",
+    "vue": "catalog:packages-habicron",
+    "vue-eslint-parser": "catalog:"
   }
 }
