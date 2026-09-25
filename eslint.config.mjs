@@ -76,6 +76,23 @@ export default antfu(
       tsconfigPath: 'tsconfig.json',
     }),
   )
+  // Cloudflare sources and their Workerd integration fixture intentionally use
+  // a separate TypeScript project so Worker globals do not leak into Node.
+  .append({
+    files: [
+      'src/cloudflare/**/*.ts',
+      'test/cloudflare/**/*.ts',
+      'vitest.cloudflare.config.ts',
+    ],
+    ignores: ['src/cloudflare/**/__test__/**'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.cloudflare.json',
+        projectService: false,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  })
   // The CLI is the one place a process may write to stdout/stderr.
   .append({
     files: ['src/cli/**/*.ts'],

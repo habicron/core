@@ -21,6 +21,7 @@ zero-dependency core behind five entry points.
 | Import | For | You get |
 | --- | --- | --- |
 | `habicron` / `habicron/node` | Node, workers, scripts, agents | a plain controller |
+| `habicron/cloudflare` | SQLite Durable Objects | an async durable clock and tick contract |
 | `habicron/browser` | Vanilla browser (no framework) | a controller + callbacks |
 | `habicron/vue` | Vue 3 | reactive `ref`s |
 | `habicron/react` | React 17+ | reactive state |
@@ -409,15 +410,66 @@ distributed or at-least-once scheduler.
 
 ---
 
+## Cloudflare Durable Objects
+
+The default `createHabit()` runtime remains an in-process `setTimeout()` scheduler. Use the opt-in asynchronous adapter when a schedule must survive Worker eviction:
+
+```ts
+import { DurableObject } from 'cloudflare:workers'
+import { DurableHabitRuntime } from 'habicron/cloudflare'
+
+interface Env {
+  DELIVERY_QUEUE: Queue
+}
+
+export class TrackingClock extends DurableObject<Env> {
+  private readonly habit = new DurableHabitRuntime({ storage: this.ctx.storage })
+
+  async arm(): Promise<void> {
+    await this.habit.arm({
+      id: 'example',
+      every: '5s',
+      maxDurationMs: 60 * 60 * 1000,
+      missedTickPolicy: 'skip',
+    })
+  }
+
+  async alarm(): Promise<void> {
+    await this.habit.handleAlarm(async (tick) => {
+      await this.env.DELIVERY_QUEUE.send({
+        tickId: tick.tickId,
+        generation: tick.generation,
+        sequence: tick.sequence,
+        scheduledAt: tick.scheduledAt,
+      })
+    })
+  }
+}
+```
+
+Use one habit per Durable Object and let the runtime exclusively own its alarm. Lifecycle methods are promises because storage and alarm transitions are durable operations.
+
+Deadlines use a fixed grid. Late alarms skip missed grid points rather than creating a burst. Jitter is persisted before arming and must be less than half the interval.
+
+Alarms and Queues are at least once. `tickId` is stable across retries, but Queue messages may duplicate after a crash. Deduplicate downstream work and keep `alarm()` limited to a short awaited durable handoff. Do not call arbitrary partner APIs or launch an unawaited `fetch()` inside the alarm.
+
+`maxDurationMs` becomes an immutable absolute expiry during `arm()`. Pause and resume never extend it. Pause deletes the alarm, so a paused expiry becomes visible lazily on the next method call. For permanent deletion of a dedicated object, call both `deleteAlarm()` and `deleteAll()` outside the adapter and never reuse that object identity.
+
+See [`docs/cloudflare-runtime.md`](./docs/cloudflare-runtime.md) for the architecture and failure model.
+
 ## Scope
 
 The **engine and adapters** (`node` / `browser` / `vue` / `react`) are a
 **runtime scheduler**: in-process only, no persistence across reloads, no
 at-least-once delivery, no distributed coordination. Browser timers may be
-throttled in backgrounded tabs. For durable, distributed scheduling, reach for a
-server-side service (e.g. a queue or Durable Object alarms).
+throttled in backgrounded tabs.
 
-The **`habit` CLI is the durable exception**: it persists habit definitions to
+The opt-in **`habicron/cloudflare` adapter is the distributed durable exception**:
+it coordinates one habit through transactional Durable Object storage and alarms.
+Consumers remain responsible for a short durable handoff and downstream
+idempotency.
+
+The **`habit` CLI is the single-host durable exception**: it persists habit definitions to
 `~/.habit/` and runs them with a background daemon — but still as a single-host
 process manager.
 

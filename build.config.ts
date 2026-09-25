@@ -10,6 +10,7 @@ import { defineBuildConfig } from 'unbuild'
 export default defineBuildConfig({
   entries: [
     'src/core/index',
+    'src/cloudflare/index',
     'src/node/index',
     'src/browser/index',
     'src/vue/index',
