@@ -1,7 +1,7 @@
 {
   "name": "habicron",
   "type": "module",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Schedule callbacks on randomized recurring intervals — habits, not cronjobs. Accurate by default, jittered on demand, with no drift. Works in Node, Vue, React, and the CLI.",
   "author": "thecodeorigin <nguyenhuunguyeny.ny@gmail.com>",
   "license": "MIT",
