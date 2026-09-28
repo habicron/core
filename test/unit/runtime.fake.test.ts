@@ -80,6 +80,7 @@ describe('durableHabitRuntime with transactional fake storage', () => {
   it('increments generation for every explicit arm', async () => {
     await expect(runtime.arm({ id: 'ride', every: '5s' })).resolves.toMatchObject({ generation: 1 })
     await expect(runtime.arm({ id: 'ride', every: '3s' })).resolves.toMatchObject({ generation: 2 })
+    await expect(runtime.arm({ id: 'another-ride', every: '3s' })).rejects.toThrow('cannot change durable habit id')
   })
 
   it('retries one claim and retains a recovery alarm after failure', async () => {
@@ -151,6 +152,40 @@ describe('durableHabitRuntime with transactional fake storage', () => {
     await expect(runtime.cancel()).resolves.toMatchObject({ status: 'cancelled', nextAt: null })
     expect(storage.alarm).toBeNull()
     await expect(runtime.resume()).rejects.toThrow('Cannot resume')
+  })
+
+  it('conditionally cancels only the current generation and is retry-safe', async () => {
+    const first = await runtime.arm({ id: 'ride', every: '5s' })
+    const current = await runtime.arm({ id: 'ride', every: '3s' })
+
+    await expect(runtime.cancelIfGeneration(first.generation)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { generation: current.generation, status: 'active' },
+    })
+    expect(storage.alarm).toBe(3_000)
+
+    await expect(runtime.cancelIfGeneration(current.generation)).resolves.toMatchObject({
+      applied: true,
+      snapshot: { generation: current.generation, status: 'cancelled', nextAt: null },
+    })
+    expect(storage.alarm).toBeNull()
+    await expect(runtime.cancelIfGeneration(current.generation)).resolves.toMatchObject({
+      applied: true,
+      snapshot: { status: 'cancelled' },
+    })
+  })
+
+  it('rejects invalid conditional generations and reports expiry without cancellation', async () => {
+    await runtime.arm({ id: 'ride', every: '5s', maxDurationMs: 1_000 })
+    for (const generation of [0, -1, 1.5, Number.NaN])
+      await expect(runtime.cancelIfGeneration(generation)).rejects.toThrow('positive safe integer')
+
+    now = 1_000
+    await expect(runtime.cancelIfGeneration(1)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { generation: 1, status: 'expired', nextAt: null },
+    })
+    expect(storage.alarm).toBeNull()
   })
 
   it('expires at the immutable ceiling and never rearms', async () => {

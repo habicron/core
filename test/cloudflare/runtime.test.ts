@@ -101,6 +101,33 @@ describe('habicron/cloudflare in Workerd', () => {
     })
   })
 
+  it('conditionally cancels only the current generation', async () => {
+    const stub = fixture('conditional-cancel')
+    await stub.setNow(at(0))
+    const first = await stub.arm({ id: 'ride', every: '5s' })
+    const current = await stub.arm({ id: 'ride', every: '3s' })
+
+    await expect(stub.cancelIfGeneration(first.generation)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { generation: current.generation, status: 'active' },
+    })
+    await runInDurableObject(stub, async (_instance, state) => {
+      await expect(state.storage.getAlarm()).resolves.toBe(at(3_000))
+    })
+
+    await expect(stub.cancelIfGeneration(current.generation)).resolves.toMatchObject({
+      applied: true,
+      snapshot: { generation: current.generation, status: 'cancelled', nextAt: null },
+    })
+    await expect(stub.cancelIfGeneration(current.generation)).resolves.toMatchObject({
+      applied: true,
+      snapshot: { status: 'cancelled' },
+    })
+    await runInDurableObject(stub, async (_instance, state) => {
+      await expect(state.storage.getAlarm()).resolves.toBeNull()
+    })
+  })
+
   it('expires and refuses to rearm', async () => {
     const stub = fixture('expiry')
     await stub.setNow(at(0))
@@ -128,6 +155,36 @@ describe('habicron/cloudflare in Workerd', () => {
     await expect(stub.snapshot()).resolves.toMatchObject({ generation: 2, nextSequence: 1, nextAt: at(8_001) })
     await runInDurableObject(stub, async (_instance, state) => {
       await expect(state.storage.getAlarm()).resolves.toBe(at(8_001))
+    })
+  })
+
+  it('cannot recall a tick whose dispatch already started', async () => {
+    const stub = fixture('cancel-race')
+    await stub.setNow(at(0))
+    const armed = await stub.arm({ id: 'ride', every: '5s' })
+    await stub.blockNextDispatch()
+    await stub.setNow(at(5_000))
+    const alarm = runDurableObjectAlarm(stub)
+    await expect.poll(async () => (await stub.attempts()).length).toBe(1)
+
+    await expect(stub.cancelIfGeneration(armed.generation)).resolves.toMatchObject({
+      applied: true,
+      snapshot: { status: 'cancelled' },
+    })
+    await stub.releaseDispatch()
+    await alarm
+
+    await expect(stub.attempts()).resolves.toMatchObject([{
+      generation: armed.generation,
+      tickId: `ride:${armed.generation}:1:${at(5_000)}`,
+    }])
+    await expect(stub.snapshot()).resolves.toMatchObject({
+      generation: armed.generation,
+      status: 'cancelled',
+      nextAt: null,
+    })
+    await runInDurableObject(stub, async (_instance, state) => {
+      await expect(state.storage.getAlarm()).resolves.toBeNull()
     })
   })
 

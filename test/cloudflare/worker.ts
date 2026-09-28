@@ -1,4 +1,4 @@
-import type { DurableHabitSnapshot, DurableHabitSpec, DurableHabitTick } from '../../src/cloudflare/index'
+import type { DurableHabitConditionalResult, DurableHabitSnapshot, DurableHabitSpec, DurableHabitTick } from '../../src/cloudflare/index'
 import { DurableObject } from 'cloudflare:workers'
 import { DurableHabitRuntime } from '../../src/cloudflare/index'
 
@@ -36,6 +36,10 @@ export class TestClock extends DurableObject<Env> {
 
   async cancel(): Promise<DurableHabitSnapshot> {
     return this.#habit.cancel()
+  }
+
+  async cancelIfGeneration(generation: number): Promise<DurableHabitConditionalResult> {
+    return this.#habit.cancelIfGeneration(generation)
   }
 
   async snapshot(): Promise<DurableHabitSnapshot | null> {

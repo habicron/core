@@ -425,13 +425,17 @@ interface Env {
 export class TrackingClock extends DurableObject<Env> {
   private readonly habit = new DurableHabitRuntime({ storage: this.ctx.storage })
 
-  async arm(): Promise<void> {
-    await this.habit.arm({
+  async arm() {
+    return await this.habit.arm({
       id: 'example',
       every: '5s',
       maxDurationMs: 60 * 60 * 1000,
       missedTickPolicy: 'skip',
     })
+  }
+
+  async cancel(generation: number) {
+    return await this.habit.cancelIfGeneration(generation)
   }
 
   async alarm(): Promise<void> {
@@ -447,11 +451,13 @@ export class TrackingClock extends DurableObject<Env> {
 }
 ```
 
-Use one habit per Durable Object and let the runtime exclusively own its alarm. Lifecycle methods are promises because storage and alarm transitions are durable operations.
+Use one immutable habit identity per Durable Object and let the runtime exclusively own its alarm. Re-arming that identity increments its generation; attempting to replace it with another habit ID is rejected. Lifecycle methods are promises because storage and alarm transitions are durable operations.
 
 Deadlines use a fixed grid. Late alarms skip missed grid points rather than creating a burst. Jitter is persisted before arming and must be less than half the interval.
 
 Alarms and Queues are at least once. `tickId` is stable across retries, but Queue messages may duplicate after a crash. Deduplicate downstream work and keep `alarm()` limited to a short awaited durable handoff. Do not call arbitrary partner APIs or launch an unawaited `fetch()` inside the alarm.
+
+Use `cancelIfGeneration(expectedGeneration)` when cancellation is based on an earlier snapshot. It atomically refuses to cancel a newer generation and is retry-safe for the matching cancelled generation. It fences stored clock state only: a handoff that already started may still complete, so downstream consumers must also fence by generation and deduplicate `tickId`.
 
 `maxDurationMs` becomes an immutable absolute expiry during `arm()`. Pause and resume never extend it. Pause deletes the alarm, so a paused expiry becomes visible lazily on the next method call. For permanent deletion of a dedicated object, call both `deleteAlarm()` and `deleteAll()` outside the adapter and never reuse that object identity.
 

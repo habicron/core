@@ -32,6 +32,11 @@ export interface DurableHabitSnapshot {
   expiresAt: number | null
 }
 
+export interface DurableHabitConditionalResult {
+  applied: boolean
+  snapshot: DurableHabitSnapshot
+}
+
 export interface DurableHabitTransaction {
   get: <T>(key: string) => MaybePromise<T | undefined>
   put: <T>(key: string, value: T) => MaybePromise<void>
