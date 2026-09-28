@@ -100,7 +100,8 @@
     "test:cloudflare": "vitest run --config vitest.cloudflare.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build:workspace": "unbuild"
+    "build:workspace": "unbuild",
+    "prepare:workspace": "unbuild"
   },
   "peerDependencies": {
     "react": "catalog:packages-habicron",
