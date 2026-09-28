@@ -21,7 +21,7 @@ The adapter uses the transactional key-value methods on `DurableObjectStorage`. 
 
 One versioned blob is deliberate. It keeps a one-habit state transition and its alarm update atomic without exposing Cloudflare imports. It sacrifices queryability and schema-level constraints that a multi-habit SQL scheduler would need.
 
-Persisted fields include the normalized schedule, immutable expiry, generation, next sequence/deadline, and current logical claim. New `arm()` calls increment the retained generation.
+Persisted fields include the normalized schedule, immutable expiry, generation, next sequence/deadline, and current logical claim. New `arm()` calls for the same immutable habit identity increment the retained generation. Reusing one object for another habit ID is rejected.
 
 ## Alarm and delivery guarantees
 
@@ -47,6 +47,8 @@ Jitter is chosen before arming and persisted. A retry does not resample a claime
 - An already accepted handoff cannot be recalled.
 - `resume()` keeps the same generation and immutable expiry, then selects the first future grid point.
 - `cancel()` is terminal for the generation and deletes the alarm.
+- `cancelIfGeneration(expectedGeneration)` atomically compares and cancels, returning `{ applied: false, snapshot }` if the object expired or a newer generation exists. Repeating it for the matching cancelled generation returns `applied: true`.
+- Generation-fenced cancellation cannot recall a handoff whose dispatch already started. Consumers must reject stale generations and deduplicate `tickId`.
 - Active schedules wake at the earlier of the next tick or expiry.
 - Paused schedules expose expiry lazily on the next public call because pause promises no alarm.
 - `destroy()` is omitted. A caller that permanently deletes a dedicated object must call `deleteAlarm()` and `deleteAll()`, then use a new object identity. Deleting state can reset generation history.
@@ -55,4 +57,5 @@ Jitter is chosen before arming and persisted. A retry does not resample a claime
 
 - Logical 3s or 5s cadence is not a wake-up SLA. Maintenance and failover can cause much larger delays.
 - One runtime cannot share the alarm with other features in the same object.
+- Arm idempotency is not provided. Callers must reconcile uncertain arm results through their own persisted lifecycle rather than blindly retrying a stale request.
 - There is no multi-habit heap, catch-up mode, exactly-once Queue publication, or partner-specific policy.

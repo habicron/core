@@ -1,5 +1,6 @@
 import type {
   DurableHabitClaim,
+  DurableHabitConditionalResult,
   DurableHabitSnapshot,
   DurableHabitSpec,
   DurableHabitState,
@@ -10,6 +11,7 @@ import type {
 import { chooseNextDeadline, parseDurableHabitSpec, tickId } from './schedule'
 
 export type {
+  DurableHabitConditionalResult,
   DurableHabitSnapshot,
   DurableHabitSpec,
   DurableHabitStatus,
@@ -42,6 +44,7 @@ async function writeState(txn: DurableHabitTransaction, state: DurableHabitState
 function expireIfDue(state: DurableHabitState, now: number): boolean {
   if (state.expiresAt == null || now < state.expiresAt || state.status === 'cancelled')
     return false
+
   state.status = 'expired'
   state.nextAt = null
   state.currentTick = null
@@ -101,6 +104,10 @@ export class DurableHabitRuntime {
     const parsed = parseDurableHabitSpec(spec, now)
     return this.#storage.transaction(async (txn) => {
       const previous = await readState(txn)
+
+      if (previous != null && previous.habitId !== parsed.id)
+        throw new Error('A Durable Object cannot change durable habit id')
+
       const generation = (previous?.generation ?? 0) + 1
       const base: DurableHabitState = {
         version: 1,
@@ -189,6 +196,32 @@ export class DurableHabitRuntime {
     })
   }
 
+  // This function helps to cancel the habit if the current generation matches the expected generation. Otherwise, it will return the current generation and snapshot. Due to the network latency, the cancellation command from an old run (or old configuration) may arrive late, accidentally killing a NEW run just created on the same ID.
+  async cancelIfGeneration(expectedGeneration: number): Promise<DurableHabitConditionalResult> {
+    if (!Number.isSafeInteger(expectedGeneration) || expectedGeneration < 1)
+      throw new Error('expectedGeneration must be a positive safe integer')
+
+    return this.#storage.transaction(async (txn) => {
+      const state = await this.#requiredState(txn)
+      const now = this.#now()
+      if (expireIfDue(state, now)) {
+        await writeState(txn, state)
+        await txn.deleteAlarm()
+        return { applied: false, snapshot: snapshotOf(state) }
+      }
+      if (state.generation !== expectedGeneration)
+        return { applied: false, snapshot: snapshotOf(state) }
+
+      state.status = 'cancelled'
+      state.currentTick = null
+      state.nextAt = null
+      state.updatedAt = now
+      await writeState(txn, state)
+      await txn.deleteAlarm()
+      return { applied: true, snapshot: snapshotOf(state) }
+    })
+  }
+
   async snapshot(): Promise<DurableHabitSnapshot | null> {
     return this.#storage.transaction(async (txn) => {
       const state = await readState(txn)
@@ -207,6 +240,7 @@ export class DurableHabitRuntime {
     const firedAt = this.#now()
     const claimed = await this.#storage.transaction(async (txn) => {
       const state = await this.#requiredState(txn)
+
       if (expireIfDue(state, firedAt) || state.status !== 'active') {
         await writeState(txn, state)
         await reconcileAlarm(txn, state, firedAt)
@@ -218,12 +252,14 @@ export class DurableHabitRuntime {
           await reconcileAlarm(txn, state, firedAt)
           return { tick: null, snapshot: snapshotOf(state) }
         }
+
         state.currentTick = {
           generation: state.generation,
           sequence: state.nextSequence,
           scheduledAt: state.nextAt,
           tickId: tickId(state.habitId, state.generation, state.nextSequence, state.nextAt),
         }
+
         state.updatedAt = firedAt
         await writeState(txn, state)
       }
@@ -261,6 +297,7 @@ export class DurableHabitRuntime {
         state.updatedAt = completedAt
         await writeState(txn, state)
       }
+
       await reconcileAlarm(txn, state, completedAt)
       return snapshotOf(state)
     })
