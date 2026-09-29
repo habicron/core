@@ -7,6 +7,7 @@
 - Added the opt-in `habicron/cloudflare` asynchronous Durable Object runtime.
 - Added durable fixed-grid sub-minute scheduling, generation fencing, stable tick IDs, hard expiry, lifecycle controls, and missed-tick skipping.
 - Added atomic `cancelIfGeneration()` fencing and immutable one-habit-per-object identity enforcement.
+- Added compare-and-set `armIfGeneration()`, `pauseIfGeneration()`, and `resumeIfGeneration()` lifecycle methods.
 - Added official Workerd integration coverage and a complete Queue handoff example.
 
 ### Compatibility
