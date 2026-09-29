@@ -425,13 +425,21 @@ interface Env {
 export class TrackingClock extends DurableObject<Env> {
   private readonly habit = new DurableHabitRuntime({ storage: this.ctx.storage })
 
-  async arm() {
-    return await this.habit.arm({
+  async arm(expectedGeneration: number | null) {
+    return await this.habit.armIfGeneration({
       id: 'example',
       every: '5s',
       maxDurationMs: 60 * 60 * 1000,
       missedTickPolicy: 'skip',
-    })
+    }, expectedGeneration)
+  }
+
+  async pause(generation: number) {
+    return await this.habit.pauseIfGeneration(generation)
+  }
+
+  async resume(generation: number) {
+    return await this.habit.resumeIfGeneration(generation)
   }
 
   async cancel(generation: number) {
@@ -457,7 +465,9 @@ Deadlines use a fixed grid. Late alarms skip missed grid points rather than crea
 
 Alarms and Queues are at least once. `tickId` is stable across retries, but Queue messages may duplicate after a crash. Deduplicate downstream work and keep `alarm()` limited to a short awaited durable handoff. Do not call arbitrary partner APIs or launch an unawaited `fetch()` inside the alarm.
 
-Use `cancelIfGeneration(expectedGeneration)` when cancellation is based on an earlier snapshot. It atomically refuses to cancel a newer generation and is retry-safe for the matching cancelled generation. It fences stored clock state only: a handoff that already started may still complete, so downstream consumers must also fence by generation and deduplicate `tickId`.
+Use `armIfGeneration(spec, null)` to create only when the object is unarmed. A matching numeric expectation performs a compare-and-set re-arm; a mismatch leaves both storage and the alarm unchanged. Cancelled and expired state cannot be conditionally re-armed. `pauseIfGeneration()` and `resumeIfGeneration()` are retry-safe and cannot target a newer generation.
+
+Use `cancelIfGeneration(expectedGeneration)` when cancellation is based on an earlier snapshot. It atomically refuses to cancel a newer generation and is retry-safe for the matching cancelled generation. A lost response from any conditional lifecycle call is not proof of ownership: reconcile the returned snapshot against your own persisted intent before deciding what to do next. Generation fencing protects stored clock state only; a handoff that already started may still complete, so downstream consumers must also fence by generation and deduplicate `tickId`.
 
 `maxDurationMs` becomes an immutable absolute expiry during `arm()`. Pause and resume never extend it. Pause deletes the alarm, so a paused expiry becomes visible lazily on the next method call. For permanent deletion of a dedicated object, call both `deleteAlarm()` and `deleteAll()` outside the adapter and never reuse that object identity.
 
