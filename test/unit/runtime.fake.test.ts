@@ -188,6 +188,99 @@ describe('durableHabitRuntime with transactional fake storage', () => {
     expect(storage.alarm).toBeNull()
   })
 
+  it('conditionally arms once and never overwrites an existing generation', async () => {
+    const first = await runtime.armIfGeneration({ id: 'ride', every: '5s' }, null)
+    expect(first).toMatchObject({
+      applied: true,
+      snapshot: { generation: 1, status: 'active', nextAt: 5_000 },
+    })
+
+    await expect(runtime.armIfGeneration({ id: 'ride', every: '5s' }, null)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { generation: 1, status: 'active', nextAt: 5_000 },
+    })
+    expect(storage.alarm).toBe(5_000)
+  })
+
+  it('conditionally rearms only the expected generation', async () => {
+    const first = await runtime.armIfGeneration({ id: 'ride', every: '5s' }, null)
+    const second = await runtime.armIfGeneration({ id: 'ride', every: '3s' }, first.snapshot.generation)
+    expect(second).toMatchObject({ applied: true, snapshot: { generation: 2, nextAt: 3_000 } })
+
+    await expect(runtime.armIfGeneration({ id: 'ride', every: '1s' }, first.snapshot.generation)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { generation: 2, nextAt: 3_000 },
+    })
+    expect(storage.alarm).toBe(3_000)
+  })
+
+  it('fences stale pause and resume operations', async () => {
+    const first = await runtime.arm({ id: 'ride', every: '5s' })
+    const current = await runtime.arm({ id: 'ride', every: '3s' })
+
+    await expect(runtime.pauseIfGeneration(first.generation)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { generation: current.generation, status: 'active' },
+    })
+    expect(storage.alarm).toBe(3_000)
+
+    await expect(runtime.pauseIfGeneration(current.generation)).resolves.toMatchObject({
+      applied: true,
+      snapshot: { generation: current.generation, status: 'paused', nextAt: null },
+    })
+    await expect(runtime.pauseIfGeneration(current.generation)).resolves.toMatchObject({
+      applied: true,
+      snapshot: { status: 'paused' },
+    })
+
+    await expect(runtime.resumeIfGeneration(first.generation)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { generation: current.generation, status: 'paused' },
+    })
+    await expect(runtime.resumeIfGeneration(current.generation)).resolves.toMatchObject({
+      applied: true,
+      snapshot: { generation: current.generation, status: 'active' },
+    })
+    await expect(runtime.resumeIfGeneration(current.generation)).resolves.toMatchObject({
+      applied: true,
+      snapshot: { status: 'active' },
+    })
+  })
+
+  it('does not conditionally resume an expired or cancelled generation', async () => {
+    const expiring = await runtime.arm({ id: 'ride', every: '5s', maxDurationMs: 1_000 })
+    now = 1_000
+    await expect(runtime.resumeIfGeneration(expiring.generation)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { status: 'expired', nextAt: null },
+    })
+    await expect(runtime.armIfGeneration({ id: 'ride', every: '5s' }, expiring.generation)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { status: 'expired', nextAt: null },
+    })
+
+    now = 2_000
+    const current = await runtime.arm({ id: 'ride', every: '5s' })
+    await runtime.cancelIfGeneration(current.generation)
+    await expect(runtime.resumeIfGeneration(current.generation)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { status: 'cancelled', nextAt: null },
+    })
+    await expect(runtime.armIfGeneration({ id: 'ride', every: '5s' }, current.generation)).resolves.toMatchObject({
+      applied: false,
+      snapshot: { status: 'cancelled', nextAt: null },
+    })
+  })
+
+  it('rejects invalid conditional generations', async () => {
+    await runtime.arm({ id: 'ride', every: '5s' })
+    for (const generation of [0, -1, 1.5, Number.NaN]) {
+      await expect(runtime.armIfGeneration({ id: 'ride', every: '5s' }, generation)).rejects.toThrow('positive safe integer')
+      await expect(runtime.pauseIfGeneration(generation)).rejects.toThrow('positive safe integer')
+      await expect(runtime.resumeIfGeneration(generation)).rejects.toThrow('positive safe integer')
+    }
+  })
+
   it('expires at the immutable ceiling and never rearms', async () => {
     await runtime.arm({ id: 'ride', every: '5s', maxDurationMs: 12_000 })
     now = 12_000
