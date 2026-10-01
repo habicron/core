@@ -76,8 +76,8 @@ export async function bootstrap(operation, environment = process.env) {
     const buildEnvironment = { ...environment }
     delete buildEnvironment.ECOSYSTEM_CHECKOUT_TOKEN
     const pnpm = environment.PNPM_EXECUTABLE ?? 'pnpm'
-    if (output(pnpm, ['--version'], { cwd: workspace, env: buildEnvironment }) !== '11.22.0')
-      throw new Error('pnpm 11.22.0 is required')
+    if (output(pnpm, ['--version'], { cwd: workspace, env: buildEnvironment }) !== '12.8.1')
+      throw new Error('pnpm 12.8.1 is required')
     run(pnpm, ['install', '--frozen-lockfile'], { cwd: workspace, env: buildEnvironment })
     run(pnpm, ['--dir', resolve(workspace, PROJECT_PATH), `run`, `${config.operation}:workspace`], { cwd: workspace, env: buildEnvironment })
   }

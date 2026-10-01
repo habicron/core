@@ -104,8 +104,8 @@
     "prepare:workspace": "unbuild"
   },
   "peerDependencies": {
-    "react": "catalog:packages-habicron",
-    "vue": "catalog:packages-habicron-2"
+    "react": "catalog:peer",
+    "vue": "catalog:peer"
   },
   "peerDependenciesMeta": {
     "react": {
@@ -116,25 +116,25 @@
     }
   },
   "devDependencies": {
-    "@antfu/eslint-config": "catalog:packages-habicron",
-    "@cloudflare/vitest-plugin": "catalog:",
-    "@cloudflare/workers-types": "catalog:apps-habicron",
-    "@eslint-react/eslint-plugin": "catalog:",
-    "@testing-library/react": "catalog:",
-    "@types/node": "catalog:packages-habicron",
-    "@types/react": "catalog:",
-    "@vitest/coverage-v8": "catalog:packages-habicron",
-    "eslint": "catalog:packages-habicron",
-    "eslint-plugin-react-hooks": "catalog:",
-    "eslint-plugin-react-refresh": "catalog:",
-    "eslint-plugin-vue": "catalog:",
-    "jsdom": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "typescript": "catalog:packages-habicron",
-    "unbuild": "catalog:",
-    "vitest": "catalog:packages-habicron",
-    "vue": "catalog:packages-habicron",
-    "vue-eslint-parser": "catalog:"
+    "@antfu/eslint-config": "catalog:linting",
+    "@cloudflare/vitest-plugin": "catalog:cloudflare",
+    "@cloudflare/workers-types": "catalog:cloudflare",
+    "@eslint-react/eslint-plugin": "catalog:linting",
+    "@testing-library/react": "catalog:testing",
+    "@types/node": "catalog:devtool",
+    "@types/react": "catalog:ui",
+    "@vitest/coverage-v8": "catalog:testing",
+    "eslint": "catalog:linting",
+    "eslint-plugin-react-hooks": "catalog:linting",
+    "eslint-plugin-react-refresh": "catalog:linting",
+    "eslint-plugin-vue": "catalog:linting",
+    "jsdom": "catalog:testing",
+    "react": "catalog:ui",
+    "react-dom": "catalog:ui",
+    "typescript": "catalog:devtool",
+    "unbuild": "catalog:devtool",
+    "vitest": "catalog:testing",
+    "vue": "catalog:vue",
+    "vue-eslint-parser": "catalog:vue"
   }
 }
