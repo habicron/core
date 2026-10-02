@@ -35,9 +35,10 @@ describe('useHabit (browser)', () => {
   })
 
   it('onChange receives a plain summary snapshot', async () => {
-    const onChange = vi.fn((_s: HabitSummary) => {})
+    const snapshots: HabitSummary[] = []
+    const onChange = (summary: HabitSummary) => snapshots.push(summary)
     const job = useHabit(() => {}, { id: 'b', name: 'B', every: '10s', onChange })
-    const last = onChange.mock.calls.at(-1)?.[0]
+    const last = snapshots.length === 0 ? undefined : snapshots[snapshots.length - 1]
     expect(last).toMatchObject({ id: 'b', name: 'B', isActive: true, counter: 0 })
     expect(last?.nextRun).toBeInstanceOf(Date)
     job.destroy()
