@@ -89,8 +89,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "node scripts/ecosystem-bootstrap.mjs build",
     "prepack": "unbuild",
+    "prepare": "unbuild",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
@@ -99,9 +99,7 @@
     "test:all": "pnpm test && pnpm test:cloudflare",
     "test:cloudflare": "vitest run --config vitest.cloudflare.config.ts",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "build:workspace": "unbuild",
-    "prepare:workspace": "unbuild"
+    "test:coverage": "vitest run --coverage"
   },
   "peerDependencies": {
     "react": "catalog:peer",
