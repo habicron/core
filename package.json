@@ -43,11 +43,6 @@
       "import": "./dist/core/index.mjs",
       "require": "./dist/core/index.cjs"
     },
-    "./cloudflare": {
-      "types": "./dist/cloudflare/index.d.ts",
-      "import": "./dist/cloudflare/index.mjs",
-      "require": "./dist/cloudflare/index.cjs"
-    },
     "./browser": {
       "types": "./dist/browser/index.d.ts",
       "import": "./dist/browser/index.mjs",
@@ -94,10 +89,7 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "typecheck:cloudflare": "tsc --noEmit -p tsconfig.cloudflare.json",
     "test": "vitest run",
-    "test:all": "pnpm test && pnpm test:cloudflare",
-    "test:cloudflare": "vitest run --config vitest.cloudflare.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
@@ -115,8 +107,6 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:linting",
-    "@cloudflare/vitest-plugin": "catalog:cloudflare",
-    "@cloudflare/workers-types": "catalog:cloudflare",
     "@eslint-react/eslint-plugin": "catalog:linting",
     "@testing-library/react": "catalog:testing",
     "@types/node": "catalog:devtool",

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { clearHabits, createHabit, dur, getHabit, listHabits, longTimeout, normalize, resolveJitter, subscribeHabits } from '../index'
+import { clearHabits, createHabit, dur, getHabit, listHabits, longTimeout, nextRuns, normalize, resolveJitter, subscribeHabits } from '../index'
 
 describe('dur', () => {
   it('passes numbers through as milliseconds', () => {
@@ -244,5 +244,23 @@ describe('registry', () => {
     h.destroy()
     expect(listener.mock.calls.length).toBeGreaterThan(added)
     unsub()
+  })
+})
+
+describe('nextRuns', () => {
+  it('lists fire times without starting a timer', () => {
+    expect(nextRuns({ every: '1m' }, 3, 1000)).toEqual([61_000, 121_000, 181_000])
+    expect(listHabits()).toHaveLength(0)
+  })
+
+  it('continues a series without drift', () => {
+    const all = nextRuns({ every: '1m' }, 4, 0)
+    expect([...nextRuns({ every: '1m' }, 2, 0), ...nextRuns({ every: '1m' }, 2, 0, 2)]).toEqual(all)
+  })
+
+  it('keeps jittered fires ordered and within the jitter bound', () => {
+    const runs = nextRuns({ every: '1m', jitter: '10s' }, 20, 0)
+    expect([...runs].sort((a, b) => a - b)).toEqual(runs)
+    runs.forEach((at, i) => expect(Math.abs(at - (i + 1) * 60_000)).toBeLessThanOrEqual(10_000))
   })
 })

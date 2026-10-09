@@ -221,6 +221,14 @@ export function longTimeout(fn: () => void, delay: number): () => void {
   }
 }
 
+/** Signed random offset for one fire; jitter never reorders adjacent fires (capped below half an interval). */
+function jitterOffset(spec: Spec, random: () => number): number {
+  if (!spec.jitter)
+    return 0
+  const magnitude = Math.min(spec.jitter.min + random() * (spec.jitter.max - spec.jitter.min), spec.intervalMs * 0.49)
+  return (random() < 0.5 ? -1 : 1) * magnitude
+}
+
 // ---------------------------------------------------------------------------
 // The engine
 // ---------------------------------------------------------------------------
@@ -303,8 +311,6 @@ export function createHabit(
     for (const l of listeners) l()
   }
 
-  const randBetween = (min: number, max: number) => min + random() * (max - min)
-
   const recomputeNext = () => {
     let min: number | null = null
     for (const t of tasks) {
@@ -327,19 +333,9 @@ export function createHabit(
     }
   }
 
-  const offset = (t: Task) => {
-    if (!t.jitter)
-      return 0
-    let mag = randBetween(t.jitter.min, t.jitter.max)
-    const cap = t.intervalMs * 0.49 // never let jitter reorder adjacent fires
-    if (mag > cap)
-      mag = cap
-    return (random() < 0.5 ? -1 : 1) * mag
-  }
-
   const schedule = (t: Task) => {
     t.count++
-    const target = t.anchor + t.count * t.intervalMs + offset(t)
+    const target = t.anchor + t.count * t.intervalMs + jitterOffset(t, random)
     t.nextTs = target
     recomputeNext()
     notify()
@@ -454,4 +450,16 @@ export function createHabit(
     start(immediate)
 
   return controller
+}
+
+/**
+ * The next `count` fire times (epoch ms) after `anchor`, in order, skipping the first `skip` fires of each
+ * habit. Pure: no timers. Continue a series without drift by passing the same `anchor` and the fires already used.
+ */
+export function nextRuns(options: HabitOptions, count: number, anchor = Date.now(), skip = 0): number[] {
+  const random = options.random ?? Math.random
+  return buildTasks(options)
+    .flatMap(task => Array.from({ length: count }, (_, i) => anchor + (skip + i + 1) * task.intervalMs + jitterOffset(task, random)))
+    .sort((a, b) => a - b)
+    .slice(0, count)
 }

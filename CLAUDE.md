@@ -309,7 +309,7 @@ persist habit definitions to `~/.habit/` and run them via a background daemon.
 That durability lives entirely in `src/cli` (store + daemon) and must not leak
 into the engine. The CLI is still a single-host process manager — not a
 distributed scheduler, queue, or at-least-once system. For those, reach for a
-real service (e.g. Cloudflare Durable Object alarms / a queue). When the CLI
+real service. When the CLI
 needs the "next jittered fire time" without running (e.g. to feed an external
 scheduler), add a pure `nextRuns(n)` to the core rather than reaching into the
 daemon.
