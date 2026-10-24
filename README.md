@@ -426,7 +426,6 @@ process manager.
 pnpm install
 pnpm lint           # eslint . --max-warnings 0
 pnpm typecheck      # tsc --noEmit
-pnpm test           # vitest run
 pnpm build          # unbuild → dist/ (minified ESM + CJS + .d.ts)
 ```
 

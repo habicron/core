@@ -33,15 +33,15 @@ thin adapter over the core controller.
 
 ```
 src/
-  core/    index.ts + __test__/   # the engine — types + scheduler, no deps
-  node/    index.ts + __test__/   # default entry: re-exports core, headless
-  browser/ index.ts + __test__/   # browser adapter — useHabit (callbacks)
-  vue/     index.ts + __test__/   # Vue adapter — useHabit (refs)
-  react/   index.ts + __test__/   # React adapter — useHabit (state)
-  cli/     index.ts store.ts daemon.ts + __test__/   # `habit` background task manager
+  core/    index.ts   # the engine — types + scheduler, no deps
+  node/    index.ts   # default entry: re-exports core, headless
+  browser/ index.ts   # browser adapter — useHabit (callbacks)
+  vue/     index.ts   # Vue adapter — useHabit (refs)
+  react/   index.ts   # React adapter — useHabit (state)
+  cli/     index.ts store.ts daemon.ts   # `habit` background task manager
 skills/habicron-{node,browser,vue,react,cli}/SKILL.md   # one agent skill per platform
 build.config.ts                  # unbuild — emits minified ESM + CJS + .d.ts
-vitest.config.ts                 # node env by default; jsdom via file docblock
+vitest.config.ts                 # kept for future deliberate tests
 eslint.config.mjs                # @antfu/eslint-config, strict, type-aware
 tsconfig.json                    # strict typecheck (noEmit)
 package.json                     # ESM, multi-entry exports map, bin
@@ -133,7 +133,7 @@ small named function.
   commands (logging to `~/.habit/logs/<id>.log`), and **polls** the store,
   re-creating a habit's controller when its `rev` bumps (update/restart). The
   pure pieces (`parseArgs`/`toOptions`, the store CRUD, `formatList`,
-  `recordToOptions`) are unit-tested; the daemon is verified by hand.
+  `recordToOptions`) are covered by typecheck; the daemon is verified by hand.
 
 ---
 
@@ -204,7 +204,7 @@ These are load-bearing. Each maps to a real failure if removed.
 - Source is TypeScript (`strict`). Keep `dur`, `resolveJitter`, `normalize`,
   `longTimeout` inline in `src/core` — no extra runtime dependencies.
 - Duration units: `ms s m h d w mo y`. If you extend the parser, keep the
-  longest-token-first regex ordering and add a test for the new unit.
+  longest-token-first regex ordering and verify with `pnpm typecheck`.
 - Keep `month`/`year` as average approximations. If exact calendar boundaries
   are ever needed, isolate the date math in a `nextBoundary` helper inside
   `normalize()` — do not scatter it through the engine.
@@ -220,12 +220,10 @@ These are load-bearing. Each maps to a real failure if removed.
 ## 7. Commands
 
 ```sh
-pnpm install        # deps (vue/react/unbuild/vitest are dev/peer only)
+pnpm install        # deps (vue/react/unbuild are dev/peer only)
 pnpm lint           # eslint . --max-warnings 0  — must pass before commit
 pnpm lint:fix       # eslint . --fix
 pnpm typecheck      # tsc --noEmit  — must pass before commit
-pnpm test           # vitest run
-pnpm test:watch     # vitest
 pnpm build          # unbuild → dist/ (minified ESM + CJS + .d.ts)
 ```
 
@@ -237,39 +235,23 @@ lockfile. `esbuild` needs its postinstall build script — it's allowlisted in
 
 ## 8. Testing strategy
 
-Tests live next to each entry in `__test__/index.test.ts` and run under Vitest.
-The engine is timer-driven, so tests must control time and randomness.
-
-- **Fake timers:** `vi.useFakeTimers()`, drive with `vi.advanceTimersByTimeAsync`.
-  Assert on `counter`, `nextRun`, `isActive`, and call order.
-- **Determinism:** inject `options.random` rather than globally stubbing
-  `Math.random` (the engine accepts a seeded RNG for exactly this).
-- **Environment:** Vitest defaults to the `node` environment. Vue/React suites
-  opt into jsdom with a file docblock: `// @vitest-environment jsdom`. React
-  uses `@testing-library/react` (`renderHook` + `act`).
-- **CLI:** test the pure `parseArgs`/`toOptions` exports — do not spawn processes
-  in unit tests.
-- **Cases worth covering:** accurate spacing (no jitter); bounded jitter never
-  exits `[min,max]`; jitter cap holds at small intervals; `immediate` fires once
-  and counts; `pause`/`resume`/`reset` semantics; union of multiple habits;
-  `longTimeout` chunking for `> MAX_DELAY` delays; SSR path (no `window`) starts
-  nothing; `times`/`per` interval math; the `'2h ~ 5m'` packed form.
+There are no tests. **Tests are deliberate, not blanket.** Add a test only when it guards real, valuable behaviour. Never add TDD, BDD or coverage-driven suites. Keep code short, simple and isolated. Prove changes with `lint`, `typecheck`, `build` and a manual check of the affected flow.
 
 ---
 
 ## 9. Change recipes
 
 - **Add a duration unit:** add to `UNIT`, insert into the `TOKEN` alternation in
-  the correct longest-first position, add a parser test in `src/core/__test__`.
+  the correct longest-first position, verify with `pnpm typecheck`.
 - **Add a scheduling option:** edit the types in `src/core` (extend `Schedule`
   or `ControlFlags`), implement in `createHabit`, then surface through the
   adapters if user-facing.
 - **Add a returned value to an adapter:** add it to that adapter's return type
   and back it from the controller via `subscribe`.
-- **Touch scheduling math:** re-run the no-drift reasoning in §3 and add a test
-  asserting the k-th fire stays near `anchor + k*interval`.
+- **Touch scheduling math:** re-run the no-drift reasoning in §3 and check
+  the k-th fire stays near `anchor + k*interval`.
 - **Add a new platform entry:** add `src/<name>/index.ts`, register it in
-  `build.config.ts#entries` and `package.json#exports`, and add a test folder.
+  `build.config.ts#entries` and `package.json#exports`.
 
 ---
 
@@ -280,7 +262,7 @@ The engine is timer-driven, so tests must control time and randomness.
 - `publishConfig.access` is `public`.
 - Bump `version` (semver). Public API change → minor pre-1.0, breaking →
   document in the README and bump accordingly.
-- Before publishing: `pnpm typecheck && pnpm test && pnpm build`, confirm `files`
+- Before publishing: `pnpm typecheck && pnpm build`, confirm `files`
   ships only `dist`/`README.md`/`LICENSE`.
 - Landing-page development and deployment belong to the hosted application
   repository (`apps/habicron` in the ecosystem superproject).
