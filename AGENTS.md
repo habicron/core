@@ -43,11 +43,11 @@ skills/habicron-{node,browser,vue,react,cli}/SKILL.md   one agent skill per plat
 - SSR-safe (no timers during server render); `fire()` swallows callback throws/rejections by design.
 - `vue` and `react` are optional peers, externalised in the build; core and node import neither.
 - Types lead the implementation; core types are the source of truth. Lint bans `as`, non-null `!` and `any` in `src`.
-- Vue/React lint rules are scoped (`src/react/**`, `**/*.vue`); do not route `.ts` through `vue-eslint-parser`.
+- Vue/React lint rules are scoped (`src/react/**`, `**/*.vue`); keep plain `.ts` out of them.
 
 ## Commands and conventions
 
-- `pnpm lint` (zero warnings, `@antfu/eslint-config` type-aware), `pnpm typecheck`, `pnpm test` (no suites exist), unbuild on `prepack`.
+- `pnpm lint` (oxlint), `pnpm typecheck`, `pnpm test` (no suites exist), unbuild on `prepack`.
   Run from the root with `pnpm --dir packages/habicron <script>`.
 - Tests are deliberate, not blanket: add one only when it guards real behaviour; prove changes with lint, typecheck, build and a manual check.
 - Recipes: add a unit = `UNIT` + `TOKEN` alternation; new option = extend `Schedule`/types in core first; new platform = `src/<name>/index.ts`

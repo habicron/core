@@ -86,8 +86,8 @@
   "scripts": {
     "prepack": "unbuild",
     "prepare": "unbuild",
-    "lint": "eslint . --max-warnings 0",
-    "lint:fix": "eslint . --fix",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
@@ -106,23 +106,16 @@
     }
   },
   "devDependencies": {
-    "@antfu/eslint-config": "catalog:linting",
-    "@eslint-react/eslint-plugin": "catalog:linting",
     "@testing-library/react": "catalog:testing",
     "@types/node": "catalog:devtool",
     "@types/react": "catalog:ui",
     "@vitest/coverage-v8": "catalog:testing",
-    "eslint": "catalog:linting",
-    "eslint-plugin-react-hooks": "catalog:linting",
-    "eslint-plugin-react-refresh": "catalog:linting",
-    "eslint-plugin-vue": "catalog:linting",
     "jsdom": "catalog:testing",
     "react": "catalog:ui",
     "react-dom": "catalog:ui",
     "typescript": "catalog:devtool",
     "unbuild": "catalog:devtool",
     "vitest": "catalog:testing",
-    "vue": "catalog:vue",
-    "vue-eslint-parser": "catalog:vue"
+    "vue": "catalog:vue"
   }
 }

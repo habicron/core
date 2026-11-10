@@ -96,7 +96,6 @@ export function useHabit(
       // Intentional: this is an external-store subscription. The controller is
       // the source of truth; we mirror its state into React on every change and
       // once on mount (it has already started before we subscribed).
-      // eslint-disable-next-line react/set-state-in-effect
       setState({ counter: ctrl.counter, isActive: ctrl.isActive, nextRun: ctrl.nextRun })
     }
     const unsubscribe = ctrl.subscribe(sync)

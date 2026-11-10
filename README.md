@@ -424,7 +424,7 @@ process manager.
 
 ```sh
 pnpm install
-pnpm lint           # eslint . --max-warnings 0
+pnpm lint           # oxlint .
 pnpm typecheck      # tsc --noEmit
 pnpm build          # unbuild → dist/ (minified ESM + CJS + .d.ts)
 ```

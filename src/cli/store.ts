@@ -56,7 +56,6 @@ function readJson<T>(file: string, fallback: T): T {
   try {
     // The one deserialization boundary: JSON.parse is `any`. Files are written
     // only by this module, so we trust their shape here rather than re-validate.
-    // eslint-disable-next-line ts/consistent-type-assertions -- external-data boundary
     return JSON.parse(readFileSync(file, 'utf8')) as T
   }
   catch {
